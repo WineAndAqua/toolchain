@@ -1,0 +1,97 @@
+diff --git a/gdb/python/lib/gdb/__init__.py b/gdb/python/lib/gdb/__init__.py
+index b3124369fe8765d2c2bc80eaa988571d9ee59e2b..d9226440cbc47ec2fa615228488c67a0dae9fdf5 100644
+--- a/gdb/python/lib/gdb/__init__.py
++++ b/gdb/python/lib/gdb/__init__.py
+@@ -86,7 +86,7 @@ frame_filters = {}
+ frame_unwinders = []
+ 
+ 
+-def _execute_unwinders(pending_frame):
++def _execute_unwinders(pending_frame, frame_type):
+     """Internal function called from GDB to execute all unwinders.
+ 
+     Runs each currently enabled unwinder until it finds the one that
+@@ -105,19 +105,19 @@ def _execute_unwinders(pending_frame):
+     """
+     for objfile in objfiles():
+         for unwinder in objfile.frame_unwinders:
+-            if unwinder.enabled:
++            if unwinder.enabled and unwinder.frame_type == frame_type:
+                 unwind_info = unwinder(pending_frame)
+                 if unwind_info is not None:
+                     return (unwind_info, unwinder.name)
+ 
+     for unwinder in current_progspace().frame_unwinders:
+-        if unwinder.enabled:
++        if unwinder.enabled and unwinder.frame_type == frame_type:
+             unwind_info = unwinder(pending_frame)
+             if unwind_info is not None:
+                 return (unwind_info, unwinder.name)
+ 
+     for unwinder in frame_unwinders:
+-        if unwinder.enabled:
++        if unwinder.enabled and unwinder.frame_type == frame_type:
+             unwind_info = unwinder(pending_frame)
+             if unwind_info is not None:
+                 return (unwind_info, unwinder.name)
+diff --git a/gdb/python/lib/gdb/unwinder.py b/gdb/python/lib/gdb/unwinder.py
+index 140b84d33748def6fc28993aba8fee8fabb955f7..7e23a662a3219f36a00d9038328af5fc5c570a5e 100644
+--- a/gdb/python/lib/gdb/unwinder.py
++++ b/gdb/python/lib/gdb/unwinder.py
+@@ -29,7 +29,7 @@ class Unwinder(object):
+         enabled: A boolean indicating whether the unwinder is enabled.
+     """
+ 
+-    def __init__(self, name):
++    def __init__(self, name, frame_type=gdb.NORMAL_FRAME):
+         """Constructor.
+ 
+         Args:
+@@ -39,9 +39,14 @@ class Unwinder(object):
+         if not isinstance(name, str):
+             raise TypeError("incorrect type for name: %s" % type(name))
+ 
++        self._frame_type = frame_type
+         self._name = name
+         self._enabled = True
+ 
++    @property
++    def frame_type(self):
++        return self._frame_type
++
+     @property
+     def name(self):
+         return self._name
+diff --git a/gdb/python/py-unwind.c b/gdb/python/py-unwind.c
+index 1856e41e2a1baafea558abc6da3c9c67079441fe..2d36c43d3421fdd9de9fb40249cc59bf95324126 100644
+--- a/gdb/python/py-unwind.c
++++ b/gdb/python/py-unwind.c
+@@ -844,7 +844,8 @@ pyuw_sniffer (const struct frame_unwind *self, frame_info_ptr this_frame,
+   /* A (gdb.UnwindInfo, str) tuple, or None.  */
+   gdbpy_ref<> pyo_execute_ret
+     (PyObject_CallFunctionObjArgs (pyo_execute.get (),
+-				   pyo_pending_frame.get (), NULL));
++				   pyo_pending_frame.get (),
++				   PyLong_FromLong(self->type), NULL));
+   if (pyo_execute_ret == nullptr)
+     {
+       /* If the unwinder is cancelled due to a Ctrl-C, then propagate
+@@ -965,6 +966,18 @@ pyuw_on_new_gdbarch (struct gdbarch *newarch)
+       unwinder->sniffer = pyuw_sniffer;
+       unwinder->dealloc_cache = pyuw_dealloc_cache;
+       frame_unwind_prepend_unwinder (newarch, unwinder);
++
++      struct frame_unwind *unwinder_signals = GDBARCH_OBSTACK_ZALLOC (newarch, struct frame_unwind);
++
++      unwinder_signals->name = "python-sigtramp";
++      unwinder_signals->type = SIGTRAMP_FRAME;
++      unwinder_signals->stop_reason = default_frame_unwind_stop_reason;
++      unwinder_signals->this_id = pyuw_this_id;
++      unwinder_signals->prev_register = pyuw_prev_register;
++      unwinder_signals->unwind_data = (const struct frame_data *) newarch;
++      unwinder_signals->sniffer = pyuw_sniffer;
++      unwinder_signals->dealloc_cache = pyuw_dealloc_cache;
++      frame_unwind_prepend_unwinder (newarch, unwinder_signals);
+       data->unwinder_registered = 1;
+     }
+ }
