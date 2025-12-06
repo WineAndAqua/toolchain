@@ -4,7 +4,7 @@ MINGW_LIBS=${MINGW_LIBS:=$(PWD)/../libs}
 
 PATH=${MINGW_LIBS}/bin:${PATH}
 
-VER=15.1.0
+VER=15.2.0
 PKGNAME=gcc
 
 rm -Rf ${PKGNAME}-${VER} && tar xf ${PKGNAME}-${VER}.tar.xz && cd ${PKGNAME}-${VER}

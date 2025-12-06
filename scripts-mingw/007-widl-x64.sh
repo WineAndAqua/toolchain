@@ -4,7 +4,7 @@ MINGW_LIBS=${MINGW_LIBS:=$(PWD)/../libs}
 
 PATH=${MINGW_LIBS}/bin:${PATH}
 
-VER=13.0.0
+VER=12.0.0
 PKGNAME=mingw-w64
 
 if [ ! -f ${PKGNAME}-v${VER}.tar.bz2 ]; then wget --continue https://downloads.sourceforge.net/project/${PKGNAME}/${PKGNAME}/${PKGNAME}-release/${PKGNAME}-v${VER}.tar.bz2; fi

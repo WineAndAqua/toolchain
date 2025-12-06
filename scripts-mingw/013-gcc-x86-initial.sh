@@ -4,7 +4,7 @@ MINGW_LIBS=${MINGW_LIBS:=$(PWD)/../libs}
 
 PATH=${MINGW_LIBS}/bin:${PATH}
 
-VER=15.1.0
+VER=15.2.0
 PKGNAME=gcc
 
 if [ ! -f ${PKGNAME}-${VER}.tar.xz ]; then wget --continue https://ftp.gnu.org/gnu/${PKGNAME}/${PKGNAME}-${VER}/${PKGNAME}-${VER}.tar.xz; fi

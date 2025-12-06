@@ -7,7 +7,7 @@ PATH=${MINGW_LIBS}/bin:${PATH}
 VER=0.27
 PKGNAME=isl
 
-if [ ! -f ${PKGNAME}-${VER}/${PKGNAME}-${VER}.tar.xz ]; then wget --continue https://libisl.sourceforge.io//${PKGNAME}-${VER}.tar.xz; fi
+if [ ! -f ${PKGNAME}-${VER}/${PKGNAME}-${VER}.tar.xz ]; then wget --continue https://libisl.sourceforge.io/${PKGNAME}-${VER}.tar.xz; fi
 
 rm -Rf ${PKGNAME}-${VER} && tar xf ${PKGNAME}-${VER}.tar.xz && cd ${PKGNAME}-${VER}
 
